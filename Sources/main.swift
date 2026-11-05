@@ -22,6 +22,18 @@ func prepareRime() throws {
 
 if let command = CommandLine.arguments.dropFirst().first {
     switch command {
+    case "--register-system":
+        guard geteuid() == 0, bundle.bundleURL.path == "/Library/Input Methods/LingoLive.app" else {
+            fputs("此命令供系统安装器注册 /Library/Input Methods 中的语流。\n", stderr)
+            exit(1)
+        }
+        let status = TISRegisterInputSource(bundle.bundleURL as CFURL)
+        guard status == noErr else {
+            fputs("系统注册失败 (\(status))\n", stderr)
+            exit(1)
+        }
+        print("已请求 macOS 注册系统输入源。")
+        exit(0)
     case "--register":
         let status = TISRegisterInputSource(bundle.bundleURL as CFURL)
         if status != noErr {

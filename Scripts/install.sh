@@ -3,6 +3,11 @@ set -euo pipefail
 DEFAULT_APP="$(cd "$(dirname "$0")/.." && pwd)/build/LingoLive.app"
 SOURCE="${1:-$DEFAULT_APP}"
 DEST="$HOME/Library/Input Methods/LingoLive.app"
+SYSTEM_APP="/Library/Input Methods/LingoLive.app"
+if [[ -e "$SYSTEM_APP" ]]; then
+    echo "已存在系统版语流。请用系统安装包更新，避免同时安装两个副本。"
+    exit 1
+fi
 [[ "$SOURCE" != "$DEST" ]] || { echo "语流已在安装位置。"; exit 0; }
 [[ -x "$SOURCE/Contents/MacOS/LingoLive" ]] || { echo "找不到 $SOURCE"; exit 1; }
 codesign --verify --deep --strict "$SOURCE"

@@ -1,0 +1,11 @@
+#!/bin/bash
+set -euo pipefail
+
+[[ "${3:-/}" == / ]] || { echo "请安装到当前启动磁盘。"; exit 1; }
+app="/Library/Input Methods/LingoLive.app"
+if [[ -e "$app" || -L "$app" ]]; then
+    if [[ -L "$app" ]] || [[ "$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$app/Contents/Info.plist" 2>/dev/null)" != com.lingolive.inputmethod.Mac ]]; then
+        echo "系统输入法目录已有同名应用，安装已停止。"
+        exit 1
+    fi
+fi

@@ -1,0 +1,36 @@
+#!/bin/bash
+set -euo pipefail
+
+app="/Library/Input Methods/LingoLive.app"
+bin="$app/Contents/MacOS/LingoLive"
+/usr/bin/codesign --verify --deep --strict "$app"
+
+# Keep a single copy of this input source. Move only the current user's
+# older bundle, as that user, and leave the dictionary and other IMEs alone.
+uid="$(/usr/bin/stat -f %u /dev/console)"
+if [[ "$uid" -ge 500 ]]; then
+    /usr/bin/sudo -n -H -u "#$uid" -- /bin/bash <<'MIGRATE'
+set -euo pipefail
+old="$HOME/Library/Input Methods/LingoLive.app"
+if [[ -d "$old" && ! -L "$old" ]] &&
+   [[ "$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$old/Contents/Info.plist" 2>/dev/null)" == com.lingolive.inputmethod.Mac ]]; then
+    backups="$HOME/Library/Application Support/LingoLive/Input Method Backups"
+    /bin/mkdir -p "$backups"
+    backup="$(/usr/bin/mktemp -d "$backups/migration.XXXXXX")"
+    /bin/mv "$old" "$backup/LingoLive.app"
+    echo "已备份原来的用户版：$backup/LingoLive.app"
+fi
+MIGRATE
+    # End only the running LingoLive server, whether this is migration or upgrade.
+    for pid in $(/usr/bin/pgrep -u "$uid" -x LingoLive || true); do
+        path="$(/bin/ps -p "$pid" -o comm= 2>/dev/null || true)"
+        case "$path" in
+            "/Library/Input Methods/LingoLive.app/Contents/MacOS/LingoLive"|*/Library/"Input Methods"/LingoLive.app/Contents/MacOS/LingoLive)
+                /bin/kill "$pid" 2>/dev/null || true
+                ;;
+        esac
+    done
+fi
+
+# Register in the system context so sandboxed applications can discover it.
+"$bin" --register-system
