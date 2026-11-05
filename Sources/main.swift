@@ -3,6 +3,7 @@ import Carbon
 import InputMethodKit
 import OSLog
 
+// Preserve the registered input-source identity so existing installations keep working.
 let identifier = "com.lingolive.inputmethod.Mac"
 let mode = identifier + ".Hans"
 let connection = identifier + "_Connection"
@@ -86,6 +87,6 @@ let application = NSApplication.shared
 application.setActivationPolicy(.accessory)
 guard let server = IMKServer(name: connection, bundleIdentifier: identifier) else { exit(1) }
 do { try prepareRime() }
-catch { NSLog("LingoLive could not initialize the pinyin dictionary: %@", String(describing: error)) }
+catch { NSLog("YuliuType could not initialize the pinyin dictionary: %@", String(describing: error)) }
 Logger(subsystem: "com.lingolive.inputmethod.Mac", category: "server").notice("Input method server started")
 withExtendedLifetime(server) { application.run() }

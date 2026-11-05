@@ -1,4 +1,4 @@
-# 语流（LingoLive）
+# 语流（YuliuType）
 
 面向日常办公与语言学习的 macOS 原生简体中文全拼输入法。边写中文，边看英语或日语译文，确认后直接上屏。
 
@@ -14,7 +14,7 @@
 
 以下是无需管理员权限的用户版安装步骤：
 
-1. 解压安装包。在终端进入解压后的 `LingoLive` 文件夹，运行 `./install.sh "$PWD/LingoLive.app"`。本机开发包使用临时签名，未经过 Apple 公证；在其他 Mac 上应优先从源码本机编译，或使用经过公证的包。
+1. 解压安装包。在终端进入解压后的 `YuliuType` 文件夹，运行 `./install.sh "$PWD/LingoLive.app"`。本机开发包使用临时签名，未经过 Apple 公证；在其他 Mac 上应优先从源码本机编译，或使用经过公证的包。
 2. 打开 **系统设置 → 键盘 → 文字输入 → 编辑 → ＋ → 简体中文**，选中 **语流**，点添加。列表没有刷新时，关闭并重新打开系统设置；首次安装后仍找不到或输入源没有生效时，保存工作、注销并重新登录一次。
 3. 在菜单栏的输入法菜单选 **语流**。安装时会打开设置窗口；如需重新打开，从语流输入法菜单选「设置与离线语言包…」，按提示下载简体中文以及要使用的英语或日语语言包。也可在「系统设置 → 通用 → 语言与地区 → 翻译语言」下载。
 4. 选中「语流」后，从菜单栏的输入法菜单选择 **翻译成英语** 或 **翻译成日语**。语流会记住上次选择；中途切换保留中文草稿。
@@ -51,3 +51,5 @@ brew install librime
 卸载时，在键盘设置移除「语流」，再将实际安装的 `LingoLive.app` 移到废纸篓：用户版在 `~/Library/Input Methods`，系统版在 `/Library/Input Methods`。
 
 引擎：[Apple InputMethodKit](https://developer.apple.com/documentation/inputmethodkit)、[Apple Translation](https://developer.apple.com/documentation/translation)、[Rime](https://github.com/rime/librime)。
+
+为兼容已安装的语流版本，内部应用目录、包标识和词库目录保持稳定；对外项目名称及发行包名称使用 YuliuType。

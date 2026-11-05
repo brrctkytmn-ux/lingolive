@@ -13,7 +13,7 @@ bool live_start(const char *shared, const char *user) {
     traits.shared_data_dir = shared;
     traits.user_data_dir = user;
     traits.app_name = "rime.lingolive";
-    traits.distribution_name = "LingoLive";
+    traits.distribution_name = "YuliuType";
     traits.distribution_code_name = "lingolive";
     traits.distribution_version = "1.0.0";
     traits.min_log_level = 3;

@@ -6,6 +6,7 @@ RIME_PREFIX="$(brew --prefix librime)"
 OPENCC_PREFIX="$(brew --prefix opencc)"
 ARCH="$(uname -m)"
 MIN_MACOS=26.4
+# Keep the internal bundle path stable across the YuliuType branding update.
 APP="$ROOT/build/LingoLive.app"
 SETUP="$APP/Contents/Resources/LingoLive Setup.app"
 RIME_DATA="$APP/Contents/Resources/Rime"

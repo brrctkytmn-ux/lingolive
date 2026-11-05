@@ -20,7 +20,7 @@ while plutil -extract "$index.BundleIsRelocatable" raw "$stage/components.plist"
     index=$((index + 1))
 done
 [[ "$index" -gt 0 ]]
-output="$PWD/build/LingoLive-$version-$(uname -m)-macOS$minimum-System.pkg"
+output="$PWD/build/YuliuType-$version-$(uname -m)-macOS$minimum-System.pkg"
 /usr/bin/pkgbuild --root "$stage/payload" --component-plist "$stage/components.plist" \
     --identifier com.lingolive.installer.system --version "$version" --install-location "/Library/Input Methods" \
     --scripts Scripts/system-package "$output"

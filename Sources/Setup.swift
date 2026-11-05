@@ -32,7 +32,7 @@ struct SetupView: View {
                     .font(.system(size: 33, weight: .medium)).foregroundStyle(Color.accentColor)
                 VStack(alignment: .leading, spacing: 3) {
                     Text("语流").font(.system(size: 25, weight: .semibold))
-                    Text("边写中文，边看英语或日语").foregroundStyle(.secondary)
+                    Text("YuliuType · 边写中文，边看英语或日语").foregroundStyle(.secondary)
                 }
             }
             Divider()
