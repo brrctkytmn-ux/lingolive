@@ -2,13 +2,34 @@ import Foundation
 import Translation
 
 let chinese = Locale.Language(identifier: "zh-Hans")
-let english = Locale.Language(identifier: "en")
+enum TranslationTarget: String, CaseIterable {
+    case english = "en"
+    case japanese = "ja"
+
+    var language: Locale.Language { Locale.Language(identifier: rawValue) }
+    var title: String { self == .english ? "英语" : "日语" }
+    var badge: String { rawValue.uppercased() }
+
+    static var selected: Self {
+        get { UserDefaults.standard.string(forKey: "TranslationTarget").flatMap(Self.init(rawValue:)) ?? .english }
+        set { UserDefaults.standard.set(newValue.rawValue, forKey: "TranslationTarget") }
+    }
+}
 
 enum TranslateFailure: Error { case empty }
 
 final class Translator {
-    static let shared = Translator()
-    private let session = TranslationSession(installedSource: chinese, target: english, preferredStrategy: .lowLatency)
+    private static let english = Translator(target: .english)
+    private static let japanese = Translator(target: .japanese)
+
+    static func forTarget(_ target: TranslationTarget) -> Translator {
+        target == .english ? english : japanese
+    }
+
+    private let session: TranslationSession
+    private init(target: TranslationTarget) {
+        session = TranslationSession(installedSource: chinese, target: target.language, preferredStrategy: .lowLatency)
+    }
     private var tail: Task<String, Error>?
     private var cache: [String: String] = [:]
     private var order: [String] = []

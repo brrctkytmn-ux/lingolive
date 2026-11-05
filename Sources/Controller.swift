@@ -59,7 +59,7 @@ final class LingoLiveController: IMKInputController {
         activeClient?.overrideKeyboard(withKeyboardNamed: "com.apple.keylayout.ABC")
         receivedKey = false
         logger.debug("Input session activated")
-        composition.start()
+        composition.start(target: TranslationTarget.selected)
     }
 
     override func deactivateServer(_ sender: Any!) {
@@ -74,7 +74,9 @@ final class LingoLiveController: IMKInputController {
     override func handle(_ event: NSEvent!, client sender: Any!) -> Bool {
         activeClient = (sender as? IMKTextInput) ?? activeClient
         guard let event, let activeClient else { return false }
-        let handled = composition.handle(event, client: CompositionClient(activeClient))
+        let client = CompositionClient(activeClient)
+        composition.selectTarget(TranslationTarget.selected, client: client)
+        let handled = composition.handle(event, client: client)
         if !receivedKey, event.type == .keyDown {
             receivedKey = true
             logger.debug("First key delivered; handled=\(handled)")
@@ -84,10 +86,25 @@ final class LingoLiveController: IMKInputController {
 
     override func menu() -> NSMenu! {
         let menu = NSMenu()
+        let selected = TranslationTarget.selected
+        for target in TranslationTarget.allCases {
+            let choice = NSMenuItem(title: "翻译成" + target.title, action: #selector(changeTarget(_:)), keyEquivalent: "")
+            choice.target = self
+            choice.representedObject = target.rawValue
+            choice.state = target == selected ? .on : .off
+            menu.addItem(choice)
+        }
+        menu.addItem(.separator())
         let item = NSMenuItem(title: "设置与离线语言包…", action: #selector(openSetup), keyEquivalent: "")
         item.target = self
         menu.addItem(item)
         return menu
+    }
+
+    @objc private func changeTarget(_ sender: NSMenuItem) {
+        guard let id = sender.representedObject as? String, let target = TranslationTarget(rawValue: id) else { return }
+        TranslationTarget.selected = target
+        composition.selectTarget(target, client: activeClient.map(CompositionClient.init))
     }
 
     @objc private func openSetup() {
@@ -108,13 +125,37 @@ final class Composition {
     private var marked = false
     private var caret = NSRect.zero
     private var sending = false
+    private var target: TranslationTarget = .english
 
     private var composing: Bool { !draft.isEmpty || !(pinyin?.raw.isEmpty ?? true) }
     private var owner: ObjectIdentifier { ObjectIdentifier(self) }
 
-    func start() {
+    func start(target: TranslationTarget = .english) {
         pinyin = Pinyin()
-        Task { @MainActor in Translator.shared.warm() }
+        if self.target == target { warm(target) }
+        else { selectTarget(target) }
+    }
+
+    func selectTarget(_ target: TranslationTarget, client: CompositionClient? = nil) {
+        guard self.target != target else { return }
+        self.target = target
+        previewSource = ""
+        preview = .idle
+        if composing, let client {
+            // Keep the Chinese draft, but discard any result or queued commit for the previous language.
+            update(client)
+        } else {
+            generation += 1
+            job?.cancel()
+            timeout?.cancel()
+            sending = false
+            Palette.shared.hide(owner)
+        }
+        warm(target)
+    }
+
+    private func warm(_ target: TranslationTarget) {
+        Task { @MainActor in Translator.forTarget(target).warm() }
     }
 
     func stop(_ client: CompositionClient?) {
@@ -239,7 +280,7 @@ final class Composition {
         let source = draft + (prediction.isEmpty ? (candidates.first ?? raw) : prediction)
         if source != previewSource { preview = .idle; previewSource = source }
         let preedit = pinyin?.preedit ?? ""
-        // Show the same Chinese candidate in the editor that the English preview translates.
+        // Show the same Chinese candidate in the editor that the preview translates.
         let inline = containsHan(prediction) ? prediction : (preedit.isEmpty ? raw : preedit)
         let visible = draft + inline
         if visible.isEmpty {
@@ -256,10 +297,10 @@ final class Composition {
         if case .translated = preview, !force { redraw(); return }
         preview = .pending
         redraw()
-        job = Task { @MainActor [weak self] in
+        job = Task { @MainActor [weak self, target] in
             do {
                 if !force { try await Task.sleep(for: .milliseconds(90)) }
-                let result = try await Translator.shared.translate(source)
+                let result = try await Translator.forTarget(target).translate(source)
                 guard !Task.isCancelled, let self, self.generation == revision else { return }
                 self.timeout?.cancel()
                 if force { self.submit(source: result, to: client) }
@@ -285,7 +326,7 @@ final class Composition {
     }
 
     private func redraw() {
-        Palette.shared.show(PaletteContent(candidates: pinyin?.candidates ?? [], preview: preview, committing: sending),
+        Palette.shared.show(PaletteContent(candidates: pinyin?.candidates ?? [], preview: preview, committing: sending, target: target),
                             owner: owner, caret: caret)
     }
 

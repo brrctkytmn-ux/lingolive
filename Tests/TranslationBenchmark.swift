@@ -4,12 +4,12 @@ import Translation
 @main
 struct TranslationBenchmark {
     @MainActor static func main() async throws {
-        let status = await LanguageAvailability(preferredStrategy: .lowLatency).status(from: chinese, to: english)
+        let status = await LanguageAvailability(preferredStrategy: .lowLatency).status(from: chinese, to: TranslationTarget.english.language)
         guard status == .installed else {
             print("SKIP: Chinese and English translation assets are not installed.")
             return
         }
-        let translator = Translator.shared
+        let translator = Translator.forTarget(.english)
         _ = try await translator.translate("你好")
         let cases = [
             "请把最新版文件发给我。",

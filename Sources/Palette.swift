@@ -9,14 +9,15 @@ struct PaletteContent: View {
     var candidates: [String]
     var preview: Preview
     var committing: Bool
+    var target: TranslationTarget
 
     var body: some View {
         VStack(alignment: .leading, spacing: 9) {
             HStack(spacing: 6) {
                 Image(systemName: "character.bubble").font(.system(size: 12, weight: .medium))
-                Text("中 → EN").font(.system(size: 11, weight: .semibold))
+                Text("中 → \(target.badge)").font(.system(size: 11, weight: .semibold))
                 Spacer()
-                Text(committing ? "Esc 取消" : "↩ 英文  ·  Tab 中文")
+                Text(committing ? "Esc 取消" : "↩ \(target.title)  ·  Tab 中文")
                     .font(.system(size: 10, weight: .medium))
             }
             .foregroundStyle(.secondary)
@@ -41,9 +42,9 @@ struct PaletteContent: View {
                 case .translated(let value):
                     Text(value).font(.system(size: 15, weight: .medium)).foregroundStyle(.primary)
                 case .pending:
-                    Text(committing ? "正在准备英文…" : "正在翻译…").foregroundStyle(.secondary)
+                    Text(committing ? "正在准备译文…" : "正在翻译…").foregroundStyle(.secondary)
                 case .unavailable:
-                    Text("暂不可译 · Tab 提交中文").foregroundStyle(.secondary)
+                    Text("暂不可译 · 请检查离线语言包").foregroundStyle(.secondary)
                 case .idle:
                     Text("输入拼音，空格或数字选词").foregroundStyle(.secondary)
                 }
