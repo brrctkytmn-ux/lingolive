@@ -1,6 +1,7 @@
 import AppKit
 import InputMethodKit
 import Carbon
+import OSLog
 
 private let replacement = NSRange(location: NSNotFound, length: NSNotFound)
 
@@ -23,8 +24,15 @@ struct CompositionClient {
         }, caret: { index in
             var line = NSRect.zero
             _ = client.attributes(forCharacterIndex: index, lineHeightRectangle: &line)
-            if line == .zero, index != 0 {
+            if line.height <= 0, index != 0 {
                 _ = client.attributes(forCharacterIndex: 0, lineHeightRectangle: &line)
+            }
+            if line.height <= 0 {
+                let marked = client.markedRange()
+                let location = marked.location != NSNotFound ? marked.location + min(index, marked.length) : client.selectedRange().location
+                if location != NSNotFound {
+                    line = client.firstRect(forCharacterRange: NSRange(location: location, length: 0), actualRange: nil)
+                }
             }
             return line
         })
@@ -34,27 +42,44 @@ struct CompositionClient {
 @objc(LingoLiveController)
 final class LingoLiveController: IMKInputController {
     private let composition = Composition()
+    private let logger = Logger(subsystem: "com.lingolive.inputmethod.Mac", category: "session")
+    private weak var activeClient: IMKTextInput?
+    private var receivedKey = false
+
+    override init!(server: IMKServer!, delegate: Any!, client: Any!) {
+        activeClient = client as? IMKTextInput
+        super.init(server: server, delegate: delegate, client: client)
+        logger.notice("Input session created")
+    }
 
     override func recognizedEvents(_ sender: Any!) -> Int { Int(NSEvent.EventTypeMask.keyDown.rawValue) }
 
     override func activateServer(_ sender: Any!) {
-        if let client = sender as? IMKTextInput {
-            client.overrideKeyboard(withKeyboardNamed: "com.apple.keylayout.ABC")
-        }
+        activeClient = (sender as? IMKTextInput) ?? activeClient
+        activeClient?.overrideKeyboard(withKeyboardNamed: "com.apple.keylayout.ABC")
+        receivedKey = false
+        logger.debug("Input session activated")
         composition.start()
     }
 
     override func deactivateServer(_ sender: Any!) {
-        composition.stop((sender as? IMKTextInput).map(CompositionClient.init))
+        composition.stop(((sender as? IMKTextInput) ?? activeClient).map(CompositionClient.init))
+        activeClient = nil
     }
 
     override func commitComposition(_ sender: Any!) {
-        composition.commit((sender as? IMKTextInput).map(CompositionClient.init))
+        composition.commit(((sender as? IMKTextInput) ?? activeClient).map(CompositionClient.init))
     }
 
     override func handle(_ event: NSEvent!, client sender: Any!) -> Bool {
-        guard let event, let client = sender as? IMKTextInput else { return false }
-        return composition.handle(event, client: CompositionClient(client))
+        activeClient = (sender as? IMKTextInput) ?? activeClient
+        guard let event, let activeClient else { return false }
+        let handled = composition.handle(event, client: CompositionClient(activeClient))
+        if !receivedKey, event.type == .keyDown {
+            receivedKey = true
+            logger.debug("First key delivered; handled=\(handled)")
+        }
+        return handled
     }
 
     override func menu() -> NSMenu! {
@@ -113,7 +138,7 @@ final class Composition {
             return false
         }
         let key = Int(event.keyCode)
-        let characters = event.characters ?? ""
+        let characters = event.characters ?? event.charactersIgnoringModifiers ?? ""
 
         if composing && key == kVK_Escape {
             let wasMarked = marked
@@ -121,8 +146,8 @@ final class Composition {
             if wasMarked { client.mark("") }
             return true
         }
-        if composing && (key == kVK_Return || key == kVK_ANSI_KeypadEnter) {
-            if mods.contains(.shift) {
+        if composing && [kVK_Return, kVK_ANSI_KeypadEnter, kVK_Tab].contains(key) {
+            if key == kVK_Tab || mods.contains(.shift) {
                 submit(source: resolve(), to: client)
             } else if !sending {
                 let oldSource = previewSource
@@ -140,7 +165,7 @@ final class Composition {
             update(client)
             return true
         }
-        if composing && [kVK_LeftArrow, kVK_RightArrow, kVK_Home, kVK_End, kVK_Tab, kVK_ForwardDelete].contains(key) {
+        if composing && [kVK_LeftArrow, kVK_RightArrow, kVK_Home, kVK_End, kVK_ForwardDelete].contains(key) {
             commit(client)
             return false
         }
@@ -214,7 +239,9 @@ final class Composition {
         let source = draft + (prediction.isEmpty ? (candidates.first ?? raw) : prediction)
         if source != previewSource { preview = .idle; previewSource = source }
         let preedit = pinyin?.preedit ?? ""
-        let visible = draft + (preedit.isEmpty ? raw : preedit)
+        // Show the same Chinese candidate in the editor that the English preview translates.
+        let inline = containsHan(prediction) ? prediction : (preedit.isEmpty ? raw : preedit)
+        let visible = draft + inline
         if visible.isEmpty {
             if marked { client.mark("") }
             reset()

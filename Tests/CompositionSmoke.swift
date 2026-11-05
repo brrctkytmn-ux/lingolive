@@ -24,10 +24,10 @@ struct CompositionSmoke {
         let localReady = await LanguageAvailability(preferredStrategy: .lowLatency).status(from: chinese, to: english) == .installed
 
         type("nihao")
-        precondition(!marked.isEmpty && inserted.isEmpty)
+        precondition(marked == "你好" && inserted.isEmpty)
         key(" ", code: kVK_Space)
         precondition(marked == "你好")
-        key("\r", code: kVK_Return, modifiers: .shift)
+        key("\t", code: kVK_Tab)
         precondition(inserted == ["你好"])
         type("nihao")
         key("\u{1B}", code: kVK_Escape)

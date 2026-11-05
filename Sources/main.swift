@@ -1,10 +1,11 @@
 import AppKit
 import Carbon
 import InputMethodKit
+import OSLog
 
 let identifier = "com.lingolive.inputmethod.Mac"
 let mode = identifier + ".Hans"
-let connection = "LingoLive_1_Connection"
+let connection = identifier + "_Connection"
 let bundle = Bundle.main
 
 func inputSource(_ id: String) -> TISInputSource? {
@@ -74,4 +75,5 @@ application.setActivationPolicy(.accessory)
 guard let server = IMKServer(name: connection, bundleIdentifier: identifier) else { exit(1) }
 do { try prepareRime() }
 catch { NSLog("LingoLive could not initialize the pinyin dictionary: %@", String(describing: error)) }
+Logger(subsystem: "com.lingolive.inputmethod.Mac", category: "server").notice("Input method server started")
 withExtendedLifetime(server) { application.run() }

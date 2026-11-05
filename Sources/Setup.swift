@@ -62,7 +62,7 @@ struct SetupView: View {
             Divider()
             VStack(alignment: .leading, spacing: 7) {
                 Text("在输入法菜单选择「语流」，输入全拼。").fontWeight(.medium)
-                Text("空格 / 1–5 选词    ↩ 英文    ⇧↩ 中文    Esc 取消").foregroundStyle(.secondary)
+                Text("空格 / 1–5 选词    ↩ 英文    Tab 中文    Esc 取消").foregroundStyle(.secondary)
             }
         }
         .padding(24)

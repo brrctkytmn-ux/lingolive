@@ -16,7 +16,7 @@ struct PaletteContent: View {
                 Image(systemName: "character.bubble").font(.system(size: 12, weight: .medium))
                 Text("中 → EN").font(.system(size: 11, weight: .semibold))
                 Spacer()
-                Text(committing ? "Esc 取消" : "↩ 英文  ·  ⇧↩ 中文")
+                Text(committing ? "Esc 取消" : "↩ 英文  ·  Tab 中文")
                     .font(.system(size: 10, weight: .medium))
             }
             .foregroundStyle(.secondary)
@@ -43,7 +43,7 @@ struct PaletteContent: View {
                 case .pending:
                     Text(committing ? "正在准备英文…" : "正在翻译…").foregroundStyle(.secondary)
                 case .unavailable:
-                    Text("暂不可译 · ⇧↩ 提交中文").foregroundStyle(.secondary)
+                    Text("暂不可译 · Tab 提交中文").foregroundStyle(.secondary)
                 case .idle:
                     Text("输入拼音，空格或数字选词").foregroundStyle(.secondary)
                 }
@@ -78,22 +78,27 @@ final class Palette {
     private var hosting: NSHostingView<PaletteContent>?
 
     func show(_ content: PaletteContent, owner: ObjectIdentifier, caret: NSRect) {
-        // A client without a caret rectangle may be a secure or unsupported field.
-        guard caret.origin.x.isFinite, caret.origin.y.isFinite, !caret.isEmpty || caret.height > 0 else {
-            hide(owner); return
+        let screens = NSScreen.screens
+        var anchor = caret
+        var screen = screens.first {
+            caret.height > 0 && $0.frame.contains(NSPoint(x: caret.midX, y: caret.midY))
         }
-        guard let screen = NSScreen.screens.first(where: { $0.frame.contains(NSPoint(x: caret.midX, y: caret.midY)) }) else {
-            hide(owner); return
+        if screen == nil {
+            // Some editing controls deliver key events but don't expose a caret rectangle.
+            let pointer = NSEvent.mouseLocation
+            screen = screens.first { $0.frame.contains(pointer) } ?? NSScreen.main
+            anchor = NSRect(x: pointer.x, y: pointer.y, width: 0, height: 14)
         }
+        guard let screen else { hide(owner); return }
         self.owner = owner
         let view: NSHostingView<PaletteContent>
         if let hosting { view = hosting; view.rootView = content }
         else { view = NSHostingView(rootView: content); hosting = view; panel.contentView = view }
         let size = view.fittingSize
         let bounds = screen.visibleFrame.insetBy(dx: 6, dy: 6)
-        let x = max(bounds.minX, min(caret.minX, bounds.maxX - size.width))
-        let below = caret.minY - size.height - 6
-        let y = max(bounds.minY, min(below >= bounds.minY ? below : caret.maxY + 6, bounds.maxY - size.height))
+        let x = max(bounds.minX, min(anchor.minX, bounds.maxX - size.width))
+        let below = anchor.minY - size.height - 6
+        let y = max(bounds.minY, min(below >= bounds.minY ? below : anchor.maxY + 6, bounds.maxY - size.height))
         panel.setFrame(NSRect(origin: NSPoint(x: x, y: y), size: size), display: true)
         if !panel.isVisible { panel.orderFrontRegardless() }
     }
