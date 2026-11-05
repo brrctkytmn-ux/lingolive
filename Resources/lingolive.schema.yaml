@@ -1,0 +1,36 @@
+schema:
+  schema_id: lingolive
+  name: 语流全拼
+  version: "1.1"
+  dependencies: []
+switches:
+  - name: simplification
+    reset: 1
+engine:
+  processors:
+    - speller
+    - selector
+    - express_editor
+  segmentors:
+    - abc_segmentor
+    - fallback_segmentor
+  translators:
+    - script_translator
+  filters:
+    - simplifier
+    - uniquifier
+simplifier:
+  option_name: simplification
+  opencc_config: t2s.json
+speller:
+  alphabet: zyxwvutsrqponmlkjihgfedcba
+  delimiter: " '"
+  algebra:
+    __patch:
+      - pinyin:/abbreviation
+      - pinyin:/spelling_correction
+      - pinyin:/key_correction
+translator:
+  dictionary: luna_pinyin
+  enable_user_dict: false
+  enable_completion: true
