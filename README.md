@@ -1,6 +1,6 @@
 # 语流 · LingoLive
 
-macOS 原生简体中文全拼输入法。边写中文，边看英语或日语译文，确认后直接上屏。
+面向日常办公与语言学习的 macOS 原生简体中文全拼输入法。边写中文，边看英语或日语译文，确认后直接上屏。
 
 - **光标旁看译文。** 输入框实时显示中文草稿，原生浮窗显示中文候选和整句译文预览，跟随浅色／深色外观。
 - **两种输出。** 回车提交当前语言的译文，Tab 保留中文。输入法只提交文字，不替你发送消息。
@@ -50,4 +50,4 @@ brew install librime
 
 卸载时，在键盘设置移除「语流」，再将实际安装的 `LingoLive.app` 移到废纸篓：用户版在 `~/Library/Input Methods`，系统版在 `/Library/Input Methods`。
 
-交互参考：[LO 语境输入法](https://forum.trae.cn/t/topic/146090)、[浮译 FloatTrans](https://github.com/krisir/floattrans)。引擎：[Apple InputMethodKit](https://developer.apple.com/documentation/inputmethodkit)、[Apple Translation](https://developer.apple.com/documentation/translation)、[Rime](https://github.com/rime/librime)。
+引擎：[Apple InputMethodKit](https://developer.apple.com/documentation/inputmethodkit)、[Apple Translation](https://developer.apple.com/documentation/translation)、[Rime](https://github.com/rime/librime)。
