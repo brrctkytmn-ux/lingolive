@@ -13,6 +13,7 @@ mkdir -p "$folder"
 ditto "$app" "$folder/LingoLive.app"
 cp Scripts/install.sh "$folder/install.sh"
 cp README.md "$folder/README.md"
+cp INSTALLATION.md "$folder/INSTALLATION.md"
 cat > "$folder/安装语流.command" <<'COMMAND'
 #!/bin/bash
 set -euo pipefail
